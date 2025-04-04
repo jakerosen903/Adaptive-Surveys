@@ -3,10 +3,44 @@ from app.models import db, User, Survey, Question, SurveyResponse, Answer, Insig
 from app.services.question_generator import generate_next_question
 from app.services.analysis_service import generate_insights
 from app.services.response_processor import process_response
+from flask_login import login_user, logout_user, login_required, current_user
+from werkzeug.security import check_password_hash, generate_password_hash
 
 main_bp = Blueprint('main', __name__)
 api_bp = Blueprint('api', __name__)
 
+
+
+# Login roots
+@main_bp.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        user = User.query.filter_by(email=request.form['email']).first()
+        if user and check_password_hash(user.password_hash, request.form['password']):
+            login_user(user)
+            flash('Logged in successfully.', 'success')
+            return redirect(url_for('main.dashboard'))
+        else:
+            flash('Invalid username or password.', 'danger')
+    return render_template('login.html')
+
+@main_bp.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('main.index'))
+
+@main_bp.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        hashed_password = generate_password_hash(request.form['password'])
+        user = User(username=request.form['username'], email=request.form['email'], password_hash=hashed_password)
+        db.session.add(user)
+        db.session.commit()
+        flash('Registration successful. Please log in.', 'success')
+        return redirect(url_for('main.login'))
+    return render_template('register.html')
 
 # Web routes
 @main_bp.route('/')

@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Create Survey - Adaptive Survey System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1>Create New Survey</h1>
+        <p class="lead">Design your adaptive survey and let AI generate relevant questions.</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('main.create_survey') }}">
+                    {{ form.csrf_token }}
+
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Survey Title</label>
+                        <input type="text" class="form-control {% if form.title.errors %}is-invalid{% endif %}"
+                               id="title" name="title" value="{{ form.title.data or '' }}" required>
+                        {% if form.title.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.title.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Choose a descriptive title for your survey</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="main_question" class="form-label">Main Question / Research Goal</label>
+                        <textarea class="form-control {% if form.main_question.errors %}is-invalid{% endif %}"
+                                  id="main_question" name="main_question" rows="3" required>{{ form.main_question.data or '' }}</textarea>
+                        {% if form.main_question.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.main_question.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">This is the main question or problem you want to explore</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description (Optional)</label>
+                        <textarea class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+                                  id="description" name="description" rows="3">{{ form.description.data or '' }}</textarea>
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.description.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Provide additional context for your survey</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="target_audience" class="form-label">Target Audience (Optional)</label>
+                        <input type="text" class="form-control {% if form.target_audience.errors %}is-invalid{% endif %}"
+                               id="target_audience" name="target_audience" value="{{ form.target_audience.data or '' }}">
+                        {% if form.target_audience.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.target_audience.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Describe who this survey is intended for</div>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <label class="form-label">Advanced Settings</label>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="max_questions" class="form-label">Maximum Questions</label>
+                                    <input type="number" class="form-control" id="max_questions" name="max_questions"
+                                           value="{{ form.max_questions.data or 5 }}" min="1" max="20">
+                                    <div class="form-text">Maximum number of questions to ask each respondent</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="allow_branching" name="allow_branching"
+                                               {% if form.allow_branching.data %}checked{% endif %}>
+                                        <label class="form-check-label" for="allow_branching">Enable Adaptive Question Branching</label>
+                                    </div>
+                                    <div class="form-text">Allow the AI to branch questions based on previous answers</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="collect_demographics" name="collect_demographics"
+                                               {% if form.collect_demographics.data %}checked{% endif %}>
+                                        <label class="form-check-label" for="collect_demographics">Collect Basic Demographics</label>
+                                    </div>
+                                    <div class="form-text">Ask for age range, gender, and location information</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-outline-secondary me-md-2" id="previewBtn">Preview</button>
+                        <button type="submit" class="btn btn-primary">Create Survey</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Tips for Effective Surveys</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <h6>Be Specific</h6>
+                        <p class="mb-0 text-muted">Focus your main question on a specific problem or area you want to explore.</p>
+                    </li>
+                    <li class="list-group-item">
+                        <h6>Provide Context</h6>
+                        <p class="mb-0 text-muted">Add details in the description to help the AI generate better questions.</p>
+                    </li>
+                    <li class="list-group-item">
+                        <h6>Consider Your Audience</h6>
+                        <p class="mb-0 text-muted">Who will be answering these questions? Make sure they're appropriate.</p>
+                    </li>
+                    <li class="list-group-item">
+                        <h6>Limit Questions</h6>
+                        <p class="mb-0 text-muted">Shorter surveys get better completion rates. 5-7 questions is often ideal.</p>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-footer">
+                <h6>Example Main Questions:</h6>
+                <ul class="mb-0">
+                    <li>"How can our company improve customer satisfaction with our support team?"</li>
+                    <li>"What factors influence students' choice of university programs?"</li>
+                    <li>"How do people perceive the impact of artificial intelligence on their careers?"</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Survey Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Generating preview...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Preview Survey
+    document.getElementById('previewBtn').addEventListener('click', function() {
+        const title = document.getElementById('title').value;
+        const mainQuestion = document.getElementById('main_question').value;
+        const description = document.getElementById('description').value;
+
+        if (!title || !mainQuestion) {
+            alert('Please provide at least a survey title and main question to generate a preview.');
+            return;
+        }
+
+        // Show preview modal
+        const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+        previewModal.show();
+
+        // In a real implementation, you would make an AJAX call to generate sample questions
+        // For now we'll simulate it with a timeout
+        setTimeout(() => {
+            const previewContent = document.getElementById('previewContent');
+            previewContent.innerHTML = `
+                <div class="preview-survey">
+                    <h3>${title}</h3>
+                    <p class="lead">${description}</p>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5>Sample Question 1</h5>
+                            <p>What specific aspects of ${mainQuestion.toLowerCase()} are you most interested in?</p>
+                            <div class="form-floating">
+                                <textarea class="form-control" placeholder="Your answer" style="height: 100px" disabled></textarea>
+                                <label>Your answer</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5>Sample Question 2</h5>
+                            <p>How have your experiences shaped your perspective on this topic?</p>
+                            <div class="form-floating">
+                                <textarea class="form-control" placeholder="Your answer" style="height: 100px" disabled></textarea>
+                                <label>Your answer</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <p class="mb-0"><strong>Note:</strong> These are sample questions. The actual questions will be generated adaptively based on respondent answers.</p>
+                    </div>
+                </div>
+            `;
+        }, 1500);
+    });
+</script>
+{% endblock %}
