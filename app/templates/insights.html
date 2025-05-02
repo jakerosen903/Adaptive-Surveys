@@ -51,7 +51,7 @@
                         </div>
                     </div>
                     <div class="insight-content">
-                        {{ insight.text|nl2br }}
+                        {{ insight.text.replace('\n', '<br>') | safe }}
                     </div>
                 </div>
             {% endfor %}

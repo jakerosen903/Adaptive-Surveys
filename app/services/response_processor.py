@@ -8,7 +8,7 @@ def process_response(response_text):
     """
     try:
         completion = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-4-turbo",
             messages=[
                 {"role": "system", "content": """
                     Extract key information from this survey response. 

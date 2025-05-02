@@ -5,11 +5,10 @@ from app.services.analysis_service import generate_insights
 from app.services.response_processor import process_response
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
+from app.models import SurveyForm
 
 main_bp = Blueprint('main', __name__)
 api_bp = Blueprint('api', __name__)
-
-
 
 # Login roots
 @main_bp.route('/login', methods=['GET', 'POST'])
@@ -49,35 +48,72 @@ def index():
 
 
 @main_bp.route('/dashboard')
+@login_required
 def dashboard():
-    surveys = Survey.query.all()
-    return render_template('dashboard.html', surveys=surveys)
+    active_surveys = Survey.query.filter_by(user_id=current_user.id, active=True).all()
+    completed_surveys = Survey.query.filter_by(user_id=current_user.id, active=False).all()
 
+    active_surveys_count = len(active_surveys)
+    total_responses_count = sum(s.responses.count() for s in active_surveys + completed_surveys)
+    total_insights_count = sum(s.insights.count() for s in active_surveys + completed_surveys)
+
+    return render_template(
+        'dashboard.html',
+        active_surveys=active_surveys,
+        completed_surveys=completed_surveys,
+        active_surveys_count=active_surveys_count,
+        total_responses_count=total_responses_count,
+        total_insights_count=total_insights_count
+    )
 
 @main_bp.route('/survey/create', methods=['GET', 'POST'])
+@login_required
 def create_survey():
-    if request.method == 'POST':
-        # Handle survey creation form submission
+    form = SurveyForm()
+
+    if form.validate_on_submit():
+        title = request.form.get('title')
+        main_question = request.form.get('main_question')
+        description = request.form.get('description')
+
+        if not title or not main_question:
+            flash('Survey Title and Main Question are required.', 'danger')
+            return render_template('create_survey.html')  # Re-render with flash message
+
+        # Create the survey
         new_survey = Survey(
-            title=request.form['title'],
-            main_question=request.form['main_question'],
-            description=request.form['description'],
-            user_id=1  # Replace with actual user authentication
+            title=title,
+            main_question=main_question,
+            description=description,
+            user_id=current_user.id
         )
         db.session.add(new_survey)
         db.session.commit()
 
-        # Generate initial questions based on main question
+        flash('Survey created successfully!', 'success')
         return redirect(url_for('main.dashboard'))
 
-    return render_template('create_survey.html')
+    return render_template('create_survey.html', form=form)
 
+@main_bp.route('/survey/<int:survey_id>/deactivate', methods=['POST'])
+@login_required
+def deactivate_survey(survey_id):
+    survey = Survey.query.get_or_404(survey_id)
+    survey.active = False
+    db.session.commit()
+    flash('Survey deactivated successfully.', 'info')
+    return redirect(url_for('main.dashboard'))
 
 @main_bp.route('/survey/<int:survey_id>')
 def view_survey(survey_id):
     survey = Survey.query.get_or_404(survey_id)
     return render_template('take_survey.html', survey=survey)
 
+@main_bp.route('/survey/<int:survey_id>/edit', methods=['GET'])
+@login_required
+def edit_survey(survey_id):
+    survey = Survey.query.filter_by(id=survey_id, user_id=current_user.id).first_or_404()
+    return render_template('edit_survey.html', survey=survey)
 
 @main_bp.route('/survey/<int:survey_id>/insights')
 def survey_insights(survey_id):

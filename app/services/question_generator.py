@@ -28,7 +28,7 @@ def generate_next_question(survey_id, response_id):
     # Use OpenAI API to generate the next question
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-4-turbo",
             messages=[
                 {"role": "system", "content": f"""
                     You are an adaptive survey assistant. You generate insightful follow-up questions based on 
@@ -68,7 +68,7 @@ def generate_first_question(survey):
     """Generate the first question for a survey"""
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-4-turbo",
             messages=[
                 {"role": "system", "content": f"""
                     You are an adaptive survey assistant. Generate the first question for a survey 

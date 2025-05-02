@@ -1,10 +1,13 @@
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField, IntegerField, BooleanField
+from wtforms.validators import DataRequired
 from datetime import datetime
 
 db = SQLAlchemy()
 
-
+# DB Models
 class User(UserMixin, db.Model):  # add UserMixin
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
@@ -26,6 +29,7 @@ class Survey(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     questions = db.relationship('Question', backref='survey', lazy='dynamic')
     responses = db.relationship('SurveyResponse', backref='survey', lazy='dynamic')
+    insights = db.relationship('Insight', backref='survey', lazy='dynamic')  # ✅ Add this line
 
     def __repr__(self):
         return f'<Survey {self.title}>'
@@ -77,3 +81,15 @@ class Insight(db.Model):
 
     def __repr__(self):
         return f'<Insight {self.text[:30]}...>'
+
+
+# Flask Objects
+
+class SurveyForm(FlaskForm):
+    title = StringField('Title', validators=[DataRequired()])
+    main_question = TextAreaField('Main Question', validators=[DataRequired()])
+    description = TextAreaField('Description')
+    target_audience = StringField('Target Audience')
+    max_questions = IntegerField('Max Questions')
+    allow_branching = BooleanField('Allow Branching')
+    collect_demographics = BooleanField('Collect Demographics')
