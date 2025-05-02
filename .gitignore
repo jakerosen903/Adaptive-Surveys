@@ -1,33 +1,5 @@
-# Bytecode and cache
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
-
-# Virtual environments
-venv/
-.env/
-
-# VSCode or PyCharm config
-.vscode/
-.idea/
-
-# Flask/Env/Secrets
-.env
-instance/
-config.py  # if you store secrets directly here (optional)
-
-# SQLite DB (if used locally)
 *.db
-*.sqlite3
-
-# Mac system files
-.DS_Store
-
-# Logs and debug
-*.log
-
-# Compiled files
-*.so
-
-# OpenAI API keys or any secret JSON/yaml files
-openai_key.json
+instance/
