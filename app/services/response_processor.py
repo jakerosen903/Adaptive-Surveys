@@ -1,5 +1,6 @@
 import json
-import openai
+import os
+import anthropic
 
 
 def process_response(response_text):
@@ -7,11 +8,15 @@ def process_response(response_text):
     Process a natural language response to extract structured data
     """
     try:
-        completion = openai.ChatCompletion.create(
-            model="gpt-4-turbo",
+        client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+        completion = client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=300,
+            temperature=0.3,
             messages=[
-                {"role": "system", "content": """
-                    Extract key information from this survey response. 
+                {
+                    "role": "user",
+                    "content": f"""Extract key information from this survey response. 
                     Identify:
                     1. Main topics mentioned
                     2. Sentiment (positive, negative, neutral)
@@ -19,15 +24,14 @@ def process_response(response_text):
                     4. Any quantitative data provided
 
                     Format the output as JSON.
-                """},
-                {"role": "user", "content": response_text}
-            ],
-            max_tokens=300,
-            temperature=0.3
+                    
+                    Survey response: {response_text}"""
+                }
+            ]
         )
 
-        processed_data = completion.choices[0].message.content
-
+        processed_data = completion.content[0].text
+        print(f'Processed response: {processed_data}')
         # Try to parse as JSON, if it fails, return as text
         try:
             parsed_json = json.loads(processed_data)

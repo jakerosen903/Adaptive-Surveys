@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Survey Complete - {{ survey.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card text-center">
+                <div class="card-body p-5">
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle fa-5x text-success"></i>
+                    </div>
+                    
+                    <h2 class="mb-3">Thank You!</h2>
+                    <p class="text-muted mb-4">
+                        You have successfully completed the survey: <strong>{{ survey.title }}</strong>
+                    </p>
+                    
+                    <p class="mb-4">
+                        Your responses will help us better understand: {{ survey.main_question }}
+                    </p>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-brain me-2"></i>
+                        Your answers are being processed by our AI to generate valuable insights.
+                    </div>
+                    
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

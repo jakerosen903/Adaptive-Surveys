@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Adaptive Surveys - AI-Powered Survey Platform{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h1 class="hero-title">Create Smarter Surveys</h1>
+                <p class="hero-subtitle">
+                    Use AI to dynamically adapt your surveys based on responses. 
+                    Get deeper insights with intelligent follow-up questions.
+                </p>
+                
+                {% if current_user.is_authenticated %}
+                    <div class="d-flex gap-3 justify-content-center">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                        </a>
+                        <a href="{{ url_for('main.create_survey') }}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-plus me-2"></i>Create Survey
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="d-flex gap-3 justify-content-center">
+                        <a href="{{ url_for('main.register') }}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-rocket me-2"></i>Get Started
+                        </a>
+                        <a href="{{ url_for('main.login') }}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <span class="stats-number">
+                        <i class="fas fa-brain"></i>
+                    </span>
+                    <div class="stats-label">AI-Powered Questions</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <span class="stats-number">
+                        <i class="fas fa-chart-line"></i>
+                    </span>
+                    <div class="stats-label">Real-time Insights</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <span class="stats-number">
+                        <i class="fas fa-users"></i>
+                    </span>
+                    <div class="stats-label">Better Engagement</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card">
+                    <div class="card-body p-5">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h3 class="mb-4">How it works</h3>
+                                <div class="d-flex align-items-start mb-3">
+                                    <div class="badge bg-primary rounded-circle p-2 me-3">1</div>
+                                    <div>
+                                        <h6>Create your main question</h6>
+                                        <p class="text-muted mb-0">Start with a broad research question you want to explore</p>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-start mb-3">
+                                    <div class="badge bg-primary rounded-circle p-2 me-3">2</div>
+                                    <div>
+                                        <h6>AI generates follow-ups</h6>
+                                        <p class="text-muted mb-0">Our AI creates personalized questions based on each response</p>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-start mb-3">
+                                    <div class="badge bg-primary rounded-circle p-2 me-3">3</div>
+                                    <div>
+                                        <h6>Get deeper insights</h6>
+                                        <p class="text-muted mb-0">Discover patterns and insights you wouldn't find with static surveys</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="text-center">
+                                    <i class="fas fa-poll fa-8x text-primary opacity-25"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,324 +1,106 @@
 {% extends "base.html" %}
 
-{% block title %}Insights for {{ survey.title }} - Adaptive Survey{% endblock %}
+{% block title %}Insights - {{ survey.title }}{% endblock %}
 
 {% block content %}
-<div class="insights-container">
-    <div class="insights-header">
-        <h1>Insights for: {{ survey.title }}</h1>
-        <p class="survey-description">{{ survey.description }}</p>
-        <div class="main-question-container">
-            <h3>Main Question: {{ survey.main_question }}</h3>
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="text-white mb-2">Survey Insights</h1>
+            <h3 class="text-white-50">{{ survey.title }}</h3>
+            <p class="text-white-50">{{ survey.main_question }}</p>
         </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
 
-        <div class="stats-container">
-            <div class="stat-box">
-                <span class="stat-number">{{ survey.responses.count() }}</span>
-                <span class="stat-label">Responses</span>
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="stats-card">
+                <span class="stats-number">{{ survey.responses.count() }}</span>
+                <div class="stats-label">Total Responses</div>
             </div>
-            <div class="stat-box">
-                <span class="stat-number">{{ insights|length }}</span>
-                <span class="stat-label">Insights Generated</span>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <span class="stats-number">{{ insights|length }}</span>
+                <div class="stats-label">Generated Insights</div>
             </div>
-            <div class="stat-box">
-                <span class="stat-number">{{ "%.1f"|format(insights|map(attribute='confidence')|sum / insights|length if insights else 0) }}</span>
-                <span class="stat-label">Avg. Confidence</span>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <span class="stats-number">{{ survey.questions.count() }}</span>
+                <div class="stats-label">Questions Generated</div>
             </div>
         </div>
     </div>
 
-    <div class="insights-controls">
-        <button id="refresh-insights" class="btn btn-secondary">
-            <i class="fa fa-refresh"></i> Generate New Insights
-        </button>
-        <button id="download-report" class="btn btn-primary">
-            <i class="fa fa-download"></i> Download Report
-        </button>
-    </div>
-
-    <div class="insights-list">
-        {% if insights %}
-            {% for insight in insights %}
-                <div class="insight-card">
-                    <div class="insight-header">
-                        <div class="confidence-badge"
-                             data-confidence="{{ insight.confidence }}"
-                             title="Confidence: {{ "%.0f"|format(insight.confidence * 100) }}%">
-                            {{ "%.0f"|format(insight.confidence * 100) }}%
+    {% if insights %}
+        <div class="row">
+            <div class="col-12">
+                <h4 class="text-white mb-4">
+                    <i class="fas fa-lightbulb me-2"></i>AI-Generated Insights
+                </h4>
+                
+                {% for insight in insights %}
+                    <div class="insight-card">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="mb-0">Insight {{ loop.index }}</h5>
+                            <span class="confidence-badge">
+                                {{ "%.0f"|format(insight.confidence * 100) }}% confidence
+                            </span>
                         </div>
-                        <div class="insight-date">
-                            Generated: {{ insight.created_at.strftime('%b %d, %Y') }}
-                        </div>
+                        
+                        <p class="mb-3">{{ insight.text }}</p>
+                        
+                        <small class="text-white-50">
+                            <i class="fas fa-clock me-1"></i>
+                            Generated {{ insight.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                        </small>
                     </div>
-                    <div class="insight-content">
-                        {{ insight.text.replace('\n', '<br>') | safe }}
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card text-center">
+                    <div class="card-body py-5">
+                        <i class="fas fa-chart-line fa-4x text-muted mb-4"></i>
+                        <h4>No Insights Yet</h4>
+                        <p class="text-muted mb-4">
+                            We need more responses to generate meaningful insights. 
+                            Share your survey link to collect more data.
+                        </p>
+                        
+                        <div class="alert alert-info">
+                            <strong>Survey Link:</strong><br>
+                            <code>{{ request.url_root }}survey/{{ survey.id }}</code>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="copyToClipboard()">
+                            <i class="fas fa-copy me-2"></i>Copy Survey Link
+                        </button>
                     </div>
                 </div>
-            {% endfor %}
-        {% else %}
-            <div class="no-insights">
-                <p>No insights have been generated yet. This could be because:</p>
-                <ul>
-                    <li>There aren't enough survey responses yet</li>
-                    <li>The survey was just created</li>
-                    <li>Insights are still being processed</li>
-                </ul>
-                <p>Try clicking "Generate New Insights" if you have collected responses.</p>
             </div>
-        {% endif %}
-    </div>
-
-    <div id="response-data" class="response-data-container">
-        <h2>Raw Response Data</h2>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Respondent</th>
-                    <th>Question</th>
-                    <th>Answer</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody id="responses-tbody">
-                {% for response in survey.responses %}
-                    {% for answer in response.answers %}
-                        <tr>
-                            <td>{{ response.respondent_id[:8] }}...</td>
-                            <td>{{ answer.question.text }}</td>
-                            <td>{{ answer.text }}</td>
-                            <td>{{ answer.created_at.strftime('%b %d, %Y') }}</td>
-                        </tr>
-                    {% endfor %}
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+        </div>
+    {% endif %}
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-    // Update the confidence badge colors based on confidence value
-    document.addEventListener('DOMContentLoaded', function() {
-        const confidenceBadges = document.querySelectorAll('.confidence-badge');
-
-        confidenceBadges.forEach(badge => {
-            const confidence = parseFloat(badge.getAttribute('data-confidence'));
-
-            if (confidence >= 0.8) {
-                badge.classList.add('high-confidence');
-            } else if (confidence >= 0.5) {
-                badge.classList.add('medium-confidence');
-            } else {
-                badge.classList.add('low-confidence');
-            }
-        });
-
-        // Generate new insights
-        document.getElementById('refresh-insights').addEventListener('click', function() {
-            this.disabled = true;
-            this.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Generating...';
-
-            fetch(`/api/surveys/{{ survey.id }}/insights`, {
-                method: 'POST'
-            })
-            .then(response => {
-                if (response.ok) {
-                    window.location.reload();
-                } else {
-                    throw new Error('Failed to generate insights');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                this.disabled = false;
-                this.innerHTML = '<i class="fa fa-refresh"></i> Generate New Insights';
-                alert('Failed to generate insights. Please try again later.');
-            });
-        });
-
-        // Download report
-        document.getElementById('download-report').addEventListener('click', function() {
-            // Create a simple report in HTML format
-            const reportTitle = `Insights Report: {{ survey.title }}`;
-            const dateGenerated = new Date().toLocaleDateString();
-
-            let reportContent = `
-                <html>
-                <head>
-                    <title>${reportTitle}</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; margin: 40px; }
-                        h1 { color: #333; }
-                        .insight { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; }
-                        .confidence { font-weight: bold; }
-                        .high { color: green; }
-                        .medium { color: orange; }
-                        .low { color: red; }
-                    </style>
-                </head>
-                <body>
-                    <h1>${reportTitle}</h1>
-                    <p>Generated on: ${dateGenerated}</p>
-                    <p>Main Question: {{ survey.main_question }}</p>
-                    <p>Total Responses: {{ survey.responses.count() }}</p>
-                    <h2>Key Insights</h2>
-            `;
-
-            {% for insight in insights %}
-                reportContent += `
-                    <div class="insight">
-                        <p class="confidence
-                            {% if insight.confidence >= 0.8 %}high{% elif insight.confidence >= 0.5 %}medium{% else %}low{% endif %}">
-                            Confidence: {{ "%.0f"|format(insight.confidence * 100) }}%
-                        </p>
-                        <p>{{ insight.text|replace('\n', '<br>') }}</p>
-                    </div>
-                `;
-            {% endfor %}
-
-            reportContent += `
-                </body>
-                </html>
-            `;
-
-            // Create a blob and download
-            const blob = new Blob([reportContent], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'insights-report-{{ survey.id }}.html';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        });
+function copyToClipboard() {
+    const surveyUrl = '{{ request.url_root }}survey/{{ survey.id }}';
+    navigator.clipboard.writeText(surveyUrl).then(function() {
+        alert('Survey link copied to clipboard!');
+    }).catch(function(err) {
+        console.error('Could not copy text: ', err);
     });
+}
 </script>
-
-<style>
-    .insights-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 20px;
-    }
-
-    .insights-header {
-        margin-bottom: 30px;
-    }
-
-    .stats-container {
-        display: flex;
-        justify-content: space-between;
-        margin: 20px 0;
-        max-width: 600px;
-    }
-
-    .stat-box {
-        background-color: #f8f9fa;
-        border-radius: 5px;
-        padding: 15px;
-        text-align: center;
-        flex: 1;
-        margin-right: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .stat-number {
-        display: block;
-        font-size: 24px;
-        font-weight: bold;
-        color: #007bff;
-    }
-
-    .stat-label {
-        font-size: 14px;
-        color: #6c757d;
-    }
-
-    .insights-controls {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-
-    .insights-list {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-        gap: 20px;
-        margin-bottom: 40px;
-    }
-
-    .insight-card {
-        background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        padding: 20px;
-        position: relative;
-    }
-
-    .insight-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-    }
-
-    .confidence-badge {
-        padding: 5px 10px;
-        border-radius: 15px;
-        font-weight: bold;
-        font-size: 14px;
-    }
-
-    .high-confidence {
-        background-color: #d4edda;
-        color: #155724;
-    }
-
-    .medium-confidence {
-        background-color: #fff3cd;
-        color: #856404;
-    }
-
-    .low-confidence {
-        background-color: #f8d7da;
-        color: #721c24;
-    }
-
-    .insight-date {
-        font-size: 12px;
-        color: #6c757d;
-    }
-
-    .insight-content {
-        font-size: 15px;
-        line-height: 1.5;
-    }
-
-    .no-insights {
-        grid-column: 1 / -1;
-        background-color: #f8f9fa;
-        padding: 20px;
-        border-radius: 8px;
-        text-align: center;
-    }
-
-    .response-data-container {
-        margin-top: 40px;
-    }
-
-    @media (max-width: 768px) {
-        .insights-list {
-            grid-template-columns: 1fr;
-        }
-
-        .stats-container {
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .stat-box {
-            margin-right: 0;
-        }
-    }
-</style>
 {% endblock %}

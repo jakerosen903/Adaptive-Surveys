@@ -1,234 +1,133 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Adaptive Survey System{% endblock %}
+{% block title %}Dashboard - Adaptive Surveys{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-8">
-        <h1>Survey Dashboard</h1>
-        <p class="lead">Manage your adaptive surveys and view response insights.</p>
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="text-white mb-2">Welcome back!</h1>
+            <p class="text-white-50">Manage your adaptive surveys and view insights</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('main.create_survey') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Create New Survey
+            </a>
+        </div>
     </div>
-    <div class="col-md-4 text-end">
-        <a href="{{ url_for('main.create_survey') }}" class="btn btn-primary">Create New Survey</a>
-    </div>
-</div>
 
-<div class="row">
-    <div class="col-md-12">
-        <!-- Survey Stats Cards -->
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card bg-primary text-white">
-                    <div class="card-body">
-                        <h5 class="card-title">Active Surveys</h5>
-                        <h2 class="card-text">{{ active_surveys_count }}</h2>
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="stats-card">
+                <span class="stats-number">{{ surveys|length }}</span>
+                <div class="stats-label">Total Surveys</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <span class="stats-number">
+                    {% set total_responses = 0 %}
+                    {% for survey in surveys %}
+                        {% set total_responses = total_responses + survey.responses.count() %}
+                    {% endfor %}
+                    {{ total_responses }}
+                </span>
+                <div class="stats-label">Total Responses</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <span class="stats-number">
+                    {% set active_surveys = surveys|selectattr('active')|list|length %}
+                    {{ active_surveys if active_surveys else 0 }}
+                </span>
+                <div class="stats-label">Active Surveys</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Surveys Grid -->
+    {% if surveys %}
+        <div class="row g-4">
+            {% for survey in surveys %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card survey-card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex align-items-start justify-content-between mb-3">
+                                <h5 class="card-title mb-0">{{ survey.title }}</h5>
+                                {% if survey.active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </div>
+                            
+                            <p class="card-text text-muted flex-grow-1">{{ survey.main_question[:100] }}{% if survey.main_question|length > 100 %}...{% endif %}</p>
+                            
+                            <div class="mt-3">
+                                <div class="row text-center mb-3">
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Responses</small>
+                                        <strong>{{ survey.responses.count() }}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Created</small>
+                                        <strong>{{ survey.created_at.strftime('%m/%d') }}</strong>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <a href="{{ url_for('main.take_survey', survey_id=survey.id) }}" 
+                                       class="btn btn-primary btn-sm" target="_blank">
+                                        <i class="fas fa-external-link-alt me-1"></i>Take Survey
+                                    </a>
+                                    
+                                    {% if survey.responses.count() > 0 %}
+                                        <a href="{{ url_for('main.view_insights', survey_id=survey.id) }}" 
+                                           class="btn btn-outline-secondary btn-sm">
+                                            <i class="fas fa-chart-bar me-1"></i>View Insights
+                                        </a>
+                                    {% else %}
+                                        <button class="btn btn-outline-secondary btn-sm" disabled>
+                                            <i class="fas fa-chart-bar me-1"></i>No Insights Yet
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card bg-success text-white">
-                    <div class="card-body">
-                        <h5 class="card-title">Total Responses</h5>
-                        <h2 class="card-text">{{ total_responses_count }}</h2>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card bg-info text-white">
-                    <div class="card-body">
-                        <h5 class="card-title">Generated Insights</h5>
-                        <h2 class="card-text">{{ total_insights_count }}</h2>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card text-center">
+                    <div class="card-body py-5">
+                        <i class="fas fa-poll fa-4x text-muted mb-4"></i>
+                        <h4>No surveys yet</h4>
+                        <p class="text-muted mb-4">Create your first adaptive survey to get started collecting intelligent insights.</p>
+                        <a href="{{ url_for('main.create_survey') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Create Your First Survey
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Surveys Table -->
-        <div class="card">
-            <div class="card-header">
-                <ul class="nav nav-tabs card-header-tabs" id="surveyTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab">Active Surveys</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">Completed Surveys</button>
-                    </li>
-                </ul>
-            </div>
-            <div class="card-body">
-                <div class="tab-content" id="surveyTabContent">
-                    <div class="tab-pane fade show active" id="active" role="tabpanel">
-                        {% if active_surveys %}
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Title</th>
-                                            <th>Main Question</th>
-                                            <th>Created</th>
-                                            <th>Responses</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for survey in active_surveys %}
-                                            <tr>
-                                                <td>{{ survey.title }}</td>
-                                                <td>{{ survey.main_question }}</td>
-                                                <td>{{ survey.created_at.strftime('%Y-%m-%d') }}</td>
-                                                <td>{{ survey.responses.count() }}</td>
-                                                <td>
-                                                    <div class="btn-group btn-group-sm">
-                                                        <a href="{{ url_for('main.view_survey', survey_id=survey.id) }}" class="btn btn-outline-primary">View</a>
-                                                        <a href="{{ url_for('main.survey_insights', survey_id=survey.id) }}" class="btn btn-outline-info">Insights</a>
-                                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">More</button>
-                                                        <ul class="dropdown-menu">
-                                                            <li><a class="dropdown-item" href="{{ url_for('main.edit_survey', survey_id=survey.id) }}">Edit</a></li>
-                                                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#shareSurveyModal" data-survey-id="{{ survey.id }}" data-survey-title="{{ survey.title }}">Share</a></li>
-                                                            <li><hr class="dropdown-divider"></li>
-                                                            <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deactivateSurveyModal" data-survey-id="{{ survey.id }}" data-survey-title="{{ survey.title }}">Deactivate</a></li>
-                                                        </ul>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% else %}
-                            <div class="alert alert-info">
-                                You don't have any active surveys. <a href="{{ url_for('main.create_survey') }}">Create one now</a>.
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="tab-pane fade" id="completed" role="tabpanel">
-                        {% if completed_surveys %}
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Title</th>
-                                            <th>Main Question</th>
-                                            <th>Completed</th>
-                                            <th>Total Responses</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for survey in completed_surveys %}
-                                            <tr>
-                                                <td>{{ survey.title }}</td>
-                                                <td>{{ survey.main_question }}</td>
-                                                <td>{{ survey.completed_at.strftime('%Y-%m-%d') }}</td>
-                                                <td>{{ survey.responses.count() }}</td>
-                                                <td>
-                                                    <div class="btn-group btn-group-sm">
-                                                        <a href="{{ url_for('main.survey_insights', survey_id=survey.id) }}" class="btn btn-outline-info">Insights</a>
-                                                        <a href="{{ url_for('main.export_survey_data', survey_id=survey.id) }}" class="btn btn-outline-secondary">Export Data</a>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% else %}
-                            <div class="alert alert-info">
-                                You don't have any completed surveys yet.
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {% endif %}
 </div>
-
-<!-- Share Survey Modal -->
-<div class="modal fade" id="shareSurveyModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Share Survey</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Share this link with your respondents:</p>
-                <div class="input-group mb-3">
-                    <input type="text" id="surveyShareLink" class="form-control" readonly>
-                    <button class="btn btn-outline-secondary" type="button" id="copyLinkBtn">Copy</button>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Deactivate Survey Modal -->
-<div class="modal fade" id="deactivateSurveyModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Deactivate Survey</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to deactivate "<span id="deactivateSurveyTitle"></span>"?</p>
-                <p>This will prevent new responses but preserve all existing data.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form method="POST" id="deactivateSurveyForm">
-                    <input type="hidden" name="survey_id" id="deactivateSurveyId">
-                    <button type="submit" class="btn btn-danger">Deactivate</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 {% endblock %}
 
-{% block extra_js %}
+{% block scripts %}
 <script>
-    // Handle Share Modal
-    const shareSurveyModal = document.getElementById('shareSurveyModal');
-    if (shareSurveyModal) {
-        shareSurveyModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const surveyId = button.getAttribute('data-survey-id');
-            const shareUrl = `${window.location.origin}/survey/${surveyId}`;
-            document.getElementById('surveyShareLink').value = shareUrl;
-        });
-
-        // Copy link button
-        document.getElementById('copyLinkBtn').addEventListener('click', function() {
-            const surveyShareLink = document.getElementById('surveyShareLink');
-            surveyShareLink.select();
-            document.execCommand('copy');
-            this.innerHTML = 'Copied!';
-            setTimeout(() => {
-                this.innerHTML = 'Copy';
-            }, 2000);
-        });
-    }
-
-    // Handle Deactivate Modal
-    const deactivateSurveyModal = document.getElementById('deactivateSurveyModal');
-    if (deactivateSurveyModal) {
-        deactivateSurveyModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const surveyId = button.getAttribute('data-survey-id');
-            const surveyTitle = button.getAttribute('data-survey-title');
-
-            document.getElementById('deactivateSurveyTitle').textContent = surveyTitle;
-            document.getElementById('deactivateSurveyId').value = surveyId;
-
-            const deactivateForm = document.getElementById('deactivateSurveyForm');
-            deactivateForm.action = `/survey/${surveyId}/deactivate`;
-        });
-    }
+document.addEventListener('DOMContentLoaded', function() {
+    // Add staggered animation to survey cards
+    const surveyCards = document.querySelectorAll('.survey-card');
+    surveyCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('fade-in');
+    });
+});
 </script>
 {% endblock %}

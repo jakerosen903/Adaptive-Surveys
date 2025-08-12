@@ -3,3 +3,6 @@ __pycache__/
 *.pyo
 *.db
 instance/
+.env
+.mcp.json
+.DS_Store

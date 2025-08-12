@@ -1,208 +1,82 @@
 {% extends "base.html" %}
 
-{% block title %}{{ survey.title }} - Adaptive Survey{% endblock %}
+{% block title %}{{ survey.title }} - Take Survey{% endblock %}
 
 {% block content %}
-<div class="survey-container">
-    <h1 class="survey-title">{{ survey.title }}</h1>
-    <p class="survey-description">{{ survey.description }}</p>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2>{{ survey.title }}</h2>
+                        <p class="text-muted">{{ survey.main_question }}</p>
+                    </div>
 
-    <div class="main-question-container">
-        <h2 class="main-question">{{ survey.main_question }}</h2>
-    </div>
-
-    <div id="survey-progress">
-        <div class="progress">
-            <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-        </div>
-    </div>
-
-    <div id="question-container">
-        <div id="current-question">
-            <!-- Questions will be loaded here dynamically -->
-            <p class="loading">Loading your first question...</p>
-        </div>
-
-        <form id="answer-form" class="mt-4">
-            <div class="form-group">
-                <textarea id="answer-text" class="form-control" rows="4" placeholder="Type your response here..."></textarea>
+                    <div class="question-container">
+                        <h4 class="mb-4">{{ question.text }}</h4>
+                        
+                        <form id="answerForm">
+                            <div class="mb-4">
+                                <textarea class="form-control" id="answer" name="answer" rows="4" 
+                                         placeholder="Share your thoughts..." required></textarea>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-arrow-right me-2"></i>Continue
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
-            <div class="form-actions mt-3">
-                <button type="submit" id="submit-answer" class="btn btn-primary">Submit Answer</button>
-            </div>
-        </form>
-    </div>
-
-    <div id="completion-message" style="display: none;">
-        <div class="alert alert-success">
-            <h4>Thank you for completing this survey!</h4>
-            <p>Your responses will help generate valuable insights. The survey creator will be notified.</p>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-    // Store the current question ID and respondent ID
-    let currentQuestionId = null;
-    let respondentId = localStorage.getItem('respondentId') ||
-                       Math.random().toString(36).substring(2, 15) +
-                       Math.random().toString(36).substring(2, 15);
-
-    // Save respondent ID in local storage
-    localStorage.setItem('respondentId', respondentId);
-
-    // Track question count for progress bar
-    let questionCount = 0;
-
-    // Function to load the next question
-    function loadNextQuestion() {
-        fetch(`/api/surveys/{{ survey.id }}/questions`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.length > 0) {
-                    // Show the first question
-                    displayQuestion(data[0]);
-                } else {
-                    // No questions yet, show loading
-                    document.getElementById('current-question').innerHTML =
-                        '<p class="loading">Preparing your personalized questions...</p>';
-
-                    // Create the first question by submitting an empty answer
-                    submitAnswer('', 0);
-                }
-            })
-            .catch(error => {
-                console.error('Error loading questions:', error);
-            });
+document.getElementById('answerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const answer = document.getElementById('answer').value;
+    const submitBtn = document.querySelector('button[type="submit"]');
+    
+    if (!answer.trim()) {
+        alert('Please provide an answer before continuing.');
+        return;
     }
-
-    // Function to display a question
-    function displayQuestion(question) {
-        currentQuestionId = question.id;
-
-        let questionHTML = `
-            <div class="question">
-                <h3>${question.text}</h3>
-            </div>
-        `;
-
-        // Handle different question types
-        if (question.question_type === 'multiple_choice' && question.options) {
-            const options = JSON.parse(question.options);
-            let optionsHTML = '<div class="options-container">';
-
-            options.forEach(option => {
-                optionsHTML += `
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="option" value="${option}" id="option-${option.replace(/\s+/g, '-')}">
-                        <label class="form-check-label" for="option-${option.replace(/\s+/g, '-')}">${option}</label>
-                    </div>
-                `;
-            });
-
-            optionsHTML += '</div>';
-            questionHTML += optionsHTML;
-
-            // Update the form for multiple choice
-            document.getElementById('answer-text').style.display = 'none';
-        } else {
-            // Show text area for open-ended questions
-            document.getElementById('answer-text').style.display = 'block';
-        }
-
-        document.getElementById('current-question').innerHTML = questionHTML;
-
-        // Update progress
-        questionCount++;
-        updateProgress();
-    }
-
-    // Function to update progress bar
-    function updateProgress() {
-        // Estimate progress (assuming average survey is 5 questions)
-        const estimatedProgress = Math.min(questionCount * 20, 90);
-        const progressBar = document.querySelector('.progress-bar');
-        progressBar.style.width = `${estimatedProgress}%`;
-        progressBar.setAttribute('aria-valuenow', estimatedProgress);
-        progressBar.innerText = `${estimatedProgress}%`;
-    }
-
-    // Function to submit an answer
-    function submitAnswer(answerText, questionId) {
-        fetch(`/api/surveys/{{ survey.id }}/answer`, {
+    
+    // Show loading state
+    submitBtn.innerHTML = '<span class="loading-spinner me-2"></span>Processing...';
+    submitBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/api/submit_answer', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                respondent_id: respondentId,
-                question_id: questionId,
-                answer_text: answerText
-            }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.next_question) {
-                // Display the next question
-                displayQuestion(data.next_question);
-            } else if (data.status === 'completed') {
-                // Survey completed
-                document.getElementById('question-container').style.display = 'none';
-                document.getElementById('completion-message').style.display = 'block';
-
-                // Set progress to 100%
-                const progressBar = document.querySelector('.progress-bar');
-                progressBar.style.width = '100%';
-                progressBar.setAttribute('aria-valuenow', 100);
-                progressBar.innerText = '100%';
-            }
-        })
-        .catch(error => {
-            console.error('Error submitting answer:', error);
+                question_id: {{ question.id }},
+                answer: answer,
+                response_id: {{ response.id }}
+            })
         });
-    }
-
-    // Submit answer when form is submitted
-    document.getElementById('answer-form').addEventListener('submit', function(event) {
-        event.preventDefault();
-
-        let answerText = '';
-
-        // Check if it's multiple choice or open-ended
-        const radioButtons = document.querySelectorAll('input[name="option"]');
-        if (radioButtons.length > 0) {
-            // Multiple choice
-            for (const radioButton of radioButtons) {
-                if (radioButton.checked) {
-                    answerText = radioButton.value;
-                    break;
-                }
-            }
-
-            if (!answerText) {
-                alert('Please select an option');
-                return;
-            }
+        
+        if (response.ok) {
+            // Reload page to get next question
+            window.location.reload();
         } else {
-            // Open-ended
-            answerText = document.getElementById('answer-text').value.trim();
-
-            if (!answerText) {
-                alert('Please enter your response');
-                return;
-            }
+            throw new Error('Failed to submit answer');
         }
-
-        // Clear the form
-        document.getElementById('answer-text').value = '';
-
-        // Submit the answer
-        submitAnswer(answerText, currentQuestionId);
-    });
-
-    // Load the first question when the page loads
-    window.addEventListener('DOMContentLoaded', function() {
-        loadNextQuestion();
-    });
+    } catch (error) {
+        alert('Error submitting answer. Please try again.');
+        submitBtn.innerHTML = '<i class="fas fa-arrow-right me-2"></i>Continue';
+        submitBtn.disabled = false;
+    }
+});
 </script>
 {% endblock %}

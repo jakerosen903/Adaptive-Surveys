@@ -1,5 +1,6 @@
 import json
-import openai
+import os
+import anthropic
 from app.models import db, Survey, Question, Answer, Insight, SurveyResponse
 
 
@@ -37,13 +38,17 @@ def generate_insights(survey_id):
             "qa_pairs": qa_pairs
         })
 
-    # Use OpenAI to generate insights
+    # Use Claude to generate insights
     try:
-        completion = openai.ChatCompletion.create(
-            model="gpt-4",
+        client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+        completion = client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=1000,
+            temperature=0.5,
             messages=[
-                {"role": "system", "content": f"""
-                    You are an expert survey data analyst. Analyze the survey responses and generate 
+                {
+                    "role": "user",
+                    "content": f"""You are an expert survey data analyst. Analyze the survey responses and generate 
                     5 valuable insights related to the main survey question: "{survey.main_question}"
 
                     For each insight, provide:
@@ -52,14 +57,14 @@ def generate_insights(survey_id):
                     3. Brief supporting evidence using direct references from the responses
 
                     Format the output as a JSON array of insight objects.
-                """},
-                {"role": "user", "content": json.dumps(all_qa_data)}
-            ],
-            max_tokens=1000,
-            temperature=0.5
+                    
+                    Survey data: {json.dumps(all_qa_data)}"""
+                }
+            ]
         )
 
-        insights_text = completion.choices[0].message.content
+        insights_text = completion.content[0].text
+        print(f'Insights text: {insights_text}')
 
         # Try to parse as JSON
         try:
