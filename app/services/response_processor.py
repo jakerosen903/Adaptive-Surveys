@@ -1,6 +1,7 @@
 import json
 import os
 import anthropic
+from app.constants import CLAUDE_MODEL, DEFAULT_PROCESSING_MAX_TOKENS, PROCESSING_TEMPERATURE
 
 
 def process_response(response_text):
@@ -10,9 +11,9 @@ def process_response(response_text):
     try:
         client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
         completion = client.messages.create(
-            model="claude-3-sonnet-20240229",
-            max_tokens=300,
-            temperature=0.3,
+            model=CLAUDE_MODEL,
+            max_tokens=DEFAULT_PROCESSING_MAX_TOKENS,
+            temperature=PROCESSING_TEMPERATURE,
             messages=[
                 {
                     "role": "user",

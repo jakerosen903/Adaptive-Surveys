@@ -2,6 +2,7 @@ import json
 import os
 import anthropic
 from app.models import db, Survey, Question, Answer, SurveyResponse
+from app.constants import CLAUDE_MODEL, DEFAULT_QUESTION_MAX_TOKENS, QUESTION_GENERATION_TEMPERATURE
 
 
 def generate_next_question(survey_id, response_id):
@@ -30,9 +31,9 @@ def generate_next_question(survey_id, response_id):
     try:
         client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
         response = client.messages.create(
-            model="claude-3-sonnet-20240229",
-            max_tokens=100,
-            temperature=0.7,
+            model=CLAUDE_MODEL,
+            max_tokens=DEFAULT_QUESTION_MAX_TOKENS,
+            temperature=QUESTION_GENERATION_TEMPERATURE,
             messages=[
                 {
                     "role": "user", 
@@ -71,12 +72,20 @@ def generate_next_question(survey_id, response_id):
 
 def generate_first_question(survey):
     """Generate the first question for a survey"""
+    api_key = os.getenv('ANTHROPIC_API_KEY')
+    print(f"Generating first question for survey: {survey.main_question}")
+    print(f"API key available: {bool(api_key)}")
+    
+    if not api_key:
+        print("No ANTHROPIC_API_KEY found in environment")
+        return None
+        
     try:
-        client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+        client = anthropic.Anthropic(api_key=api_key)
         response = client.messages.create(
-            model="claude-3-sonnet-20240229",
-            max_tokens=100,
-            temperature=0.7,
+            model=CLAUDE_MODEL,
+            max_tokens=DEFAULT_QUESTION_MAX_TOKENS,
+            temperature=QUESTION_GENERATION_TEMPERATURE,
             messages=[
                 {
                     "role": "user",
@@ -91,10 +100,10 @@ def generate_first_question(survey):
 
         question_text = response.content[0].text.strip()
         print(f'First Question text: {question_text}')
+        
         # Create and save the new question
         new_question = Question(
             text=question_text,
-            question_type='open_ended',
             order=1,
             survey_id=survey.id
         )

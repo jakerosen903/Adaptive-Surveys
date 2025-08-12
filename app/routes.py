@@ -3,6 +3,7 @@ from app.models import db, User, Survey, Question, SurveyResponse, Answer, Insig
 from app.services.question_generator import generate_next_question
 from app.services.analysis_service import generate_insights
 from app.services.response_processor import process_response
+from app.constants import MAX_QUESTIONS_PER_SURVEY
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 import uuid
@@ -115,10 +116,25 @@ def take_survey(survey_id):
     if not answered_questions:
         # Generate first question
         question = generate_next_question(survey_id, response.id)
+        if not question:
+            # Fallback: create a simple first question
+            question = Question(
+                text=f"What are your initial thoughts about: {survey.main_question}",
+                order=1,
+                survey_id=survey_id
+            )
+            db.session.add(question)
+            db.session.commit()
     else:
         # Check if we should generate another question
-        if len(answered_questions) < 5:  # Max 5 questions
+        if len(answered_questions) < MAX_QUESTIONS_PER_SURVEY:
             question = generate_next_question(survey_id, response.id)
+            if not question:
+                # End survey if no more questions can be generated
+                from datetime import datetime
+                response.completed_at = datetime.utcnow()
+                db.session.commit()
+                return render_template('survey_complete.html', survey=survey)
         else:
             question = None
     

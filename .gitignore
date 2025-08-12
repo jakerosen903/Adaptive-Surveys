@@ -6,3 +6,4 @@ instance/
 .env
 .mcp.json
 .DS_Store
+**/.DS_Store

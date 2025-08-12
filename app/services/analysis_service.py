@@ -2,6 +2,7 @@ import json
 import os
 import anthropic
 from app.models import db, Survey, Question, Answer, Insight, SurveyResponse
+from app.constants import CLAUDE_MODEL, DEFAULT_ANALYSIS_MAX_TOKENS, ANALYSIS_TEMPERATURE
 
 
 def generate_insights(survey_id):
@@ -42,9 +43,9 @@ def generate_insights(survey_id):
     try:
         client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
         completion = client.messages.create(
-            model="claude-3-sonnet-20240229",
-            max_tokens=1000,
-            temperature=0.5,
+            model=CLAUDE_MODEL,
+            max_tokens=DEFAULT_ANALYSIS_MAX_TOKENS,
+            temperature=ANALYSIS_TEMPERATURE,
             messages=[
                 {
                     "role": "user",
