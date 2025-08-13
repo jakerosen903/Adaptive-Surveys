@@ -7,3 +7,6 @@ instance/
 .mcp.json
 .DS_Store
 **/.DS_Store
+
+# Claude Code files
+CLAUDE.md

@@ -10,7 +10,12 @@
                 <div class="card-body p-5">
                     <div class="text-center mb-4">
                         <h2>{{ survey.title }}</h2>
-                        <p class="text-muted">{{ survey.main_question }}</p>
+                        <p class="text-muted mb-3">{{ survey.main_question }}</p>
+                        <div class="d-flex justify-content-center align-items-center text-muted small">
+                            <span><i class="fas fa-robot me-1"></i>Powered by AI</span>
+                            <span class="mx-2">•</span>
+                            <span><i class="fas fa-clock me-1"></i>~3-5 questions</span>
+                        </div>
                     </div>
 
                     <div class="question-container">

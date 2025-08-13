@@ -168,6 +168,25 @@ def view_insights(survey_id):
     
     return render_template('insights.html', survey=survey, insights=insights)
 
+@main_bp.route('/get_survey_link/<int:survey_id>')
+@login_required
+def get_survey_link(survey_id):
+    survey = Survey.query.get_or_404(survey_id)
+    
+    # Check ownership
+    if survey.user_id != current_user.id:
+        flash('Access denied')
+        return redirect(url_for('main.dashboard'))
+    
+    # Generate the full URL for sharing
+    survey_url = url_for('main.take_survey', survey_id=survey_id, _external=True)
+    
+    return jsonify({
+        'url': survey_url,
+        'title': survey.title,
+        'main_question': survey.main_question
+    })
+
 @api_bp.route('/submit_answer', methods=['POST'])
 def submit_answer():
     data = request.get_json()

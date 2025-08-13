@@ -83,6 +83,12 @@
                                         <i class="fas fa-external-link-alt me-1"></i>Take Survey
                                     </a>
                                     
+                                    <button class="btn btn-outline-primary btn-sm share-survey-btn" 
+                                            data-survey-id="{{ survey.id }}"
+                                            data-survey-title="{{ survey.title }}">
+                                        <i class="fas fa-share me-1"></i>Share Survey
+                                    </button>
+                                    
                                     {% if survey.responses.count() > 0 %}
                                         <a href="{{ url_for('main.view_insights', survey_id=survey.id) }}" 
                                            class="btn btn-outline-secondary btn-sm">
@@ -128,6 +134,82 @@ document.addEventListener('DOMContentLoaded', function() {
         card.style.animationDelay = `${index * 0.1}s`;
         card.classList.add('fade-in');
     });
+
+    // Handle survey sharing
+    document.querySelectorAll('.share-survey-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const surveyId = this.dataset.surveyId;
+            const surveyTitle = this.dataset.surveyTitle;
+            
+            // Generate URL using current domain (works with localhost, ngrok, or production)
+            const surveyUrl = window.location.origin + '/survey/' + surveyId;
+            
+            console.log('Share button clicked!');
+            console.log('Survey URL:', surveyUrl);
+            console.log('Survey Title:', surveyTitle);
+            
+            // Try to use the Web Share API first (mobile friendly)
+            if (navigator.share) {
+                console.log('Using Web Share API');
+                navigator.share({
+                    title: `Take this survey: ${surveyTitle}`,
+                    text: `I'd love your thoughts on this survey!`,
+                    url: surveyUrl
+                }).catch(err => console.log('Error sharing:', err));
+            } else {
+                console.log('Using clipboard fallback');
+                // Fallback to clipboard copy
+                navigator.clipboard.writeText(surveyUrl).then(() => {
+                    console.log('Successfully copied to clipboard');
+                    // Show success feedback
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-check me-1"></i>Link Copied!';
+                    this.classList.remove('btn-outline-primary');
+                    this.classList.add('btn-success');
+                    
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.classList.remove('btn-success');
+                        this.classList.add('btn-outline-primary');
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                    // Show fallback modal with URL to copy manually
+                    showShareModal(surveyUrl, surveyTitle);
+                });
+            }
+        });
+    });
+
+    function showShareModal(url, title) {
+        // Create and show a simple modal with the URL
+        const modal = document.createElement('div');
+        modal.innerHTML = `
+            <div class="modal fade" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Share Survey: ${title}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Copy this link to share your survey:</p>
+                            <div class="input-group">
+                                <input type="text" class="form-control" value="${url}" readonly>
+                                <button class="btn btn-outline-secondary" type="button" onclick="this.previousElementSibling.select(); document.execCommand('copy'); this.textContent='Copied!';">Copy</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        const bootstrapModal = new bootstrap.Modal(modal.querySelector('.modal'));
+        bootstrapModal.show();
+        
+        // Clean up when modal is hidden
+        modal.addEventListener('hidden.bs.modal', () => modal.remove());
+    }
 });
 </script>
 {% endblock %}

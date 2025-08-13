@@ -31,7 +31,30 @@ A dynamic survey platform that uses Claude AI to generate contextual follow-up q
    python app.py
    ```
 
-Visit `http://localhost:5000` to access the application.
+Visit `http://localhost:5001` to access the application.
+
+## Sharing Surveys Externally
+
+To share surveys with people on different networks:
+
+1. **Install ngrok** (for temporary public access):
+   ```bash
+   brew install ngrok
+   ```
+
+2. **Run your app**:
+   ```bash
+   python app.py
+   ```
+
+3. **Create public tunnel** (in another terminal):
+   ```bash
+   ngrok http 5001
+   ```
+
+4. **Share the HTTPS URL** that ngrok provides with your friends
+
+The dashboard includes "Share Survey" buttons with copy-to-clipboard functionality for easy sharing.
 
 ## API Key Setup
 
