@@ -25,6 +25,15 @@ def create_app(config_class=Config):
     @app.context_processor
     def inject_now():
         return {'now': datetime.utcnow()}
+    
+    # Custom Jinja filters
+    @app.template_filter('from_json')
+    def from_json_filter(s):
+        try:
+            import json
+            return json.loads(s) if s else []
+        except:
+            return []
 
     # Register blueprints
     app.register_blueprint(routes.main_bp)

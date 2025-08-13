@@ -158,7 +158,13 @@ def view_insights(survey_id):
     
     # Generate fresh insights
     insights_data = generate_insights(survey_id)
+    
+    # Debug: Print what was generated
+    print(f"Generated insights data: {insights_data}")
+    
+    # Get insights from database
     insights = survey.insights.all()
+    print(f"Insights from database: {[i.text for i in insights]}")
     
     return render_template('insights.html', survey=survey, insights=insights)
 

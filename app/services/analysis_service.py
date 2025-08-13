@@ -14,9 +14,9 @@ def generate_insights(survey_id):
         return []
 
     # Get all completed responses
-    responses = SurveyResponse.query.filter_by(
-        survey_id=survey_id,
-        completed_at=None
+    responses = SurveyResponse.query.filter(
+        SurveyResponse.survey_id == survey_id,
+        SurveyResponse.completed_at.isnot(None)
     ).all()
 
     if not responses:
@@ -50,14 +50,27 @@ def generate_insights(survey_id):
                 {
                     "role": "user",
                     "content": f"""You are an expert survey data analyst. Analyze the survey responses and generate 
-                    5 valuable insights related to the main survey question: "{survey.main_question}"
+                    3-7 valuable insights related to the main survey question: "{survey.main_question}"
 
-                    For each insight, provide:
-                    1. A clear insight statement
-                    2. A confidence level as a percentage (0-100)
-                    3. Brief supporting evidence using direct references from the responses
+                    Return your analysis as a JSON array with this EXACT structure:
+                    [
+                      {{
+                        "insight_statement": "Clear, actionable insight statement",
+                        "confidence_level": 85,
+                        "supporting_evidence": "Brief supporting evidence with direct quotes",
+                        "insight_type": "trend|pattern|recommendation|concern|opportunity",
+                        "tags": ["tag1", "tag2"]
+                      }}
+                    ]
 
-                    Format the output as a JSON array of insight objects.
+                    Guidelines:
+                    - insight_statement: 1-2 sentences, actionable and specific
+                    - confidence_level: integer 0-100 based on evidence strength
+                    - supporting_evidence: 2-3 sentences with direct quotes where possible
+                    - insight_type: categorize as trend, pattern, recommendation, concern, or opportunity
+                    - tags: 2-4 relevant keywords for this insight
+
+                    Focus on insights that would be most valuable for improving the survey topic or understanding user needs.
                     
                     Survey data: {json.dumps(all_qa_data)}"""
                 }
@@ -75,9 +88,11 @@ def generate_insights(survey_id):
             for insight_data in insights_data:
                 insight = Insight(
                     survey_id=survey_id,
-                    text=insight_data.get('insight_statement', '') + "\n\n" +
-                         insight_data.get('supporting_evidence', ''),
-                    confidence=float(insight_data.get('confidence_level', 0.5))
+                    text=insight_data.get('insight_statement', ''),
+                    supporting_evidence=insight_data.get('supporting_evidence', ''),
+                    confidence=float(insight_data.get('confidence_level', 50)) / 100.0,
+                    insight_type=insight_data.get('insight_type', 'pattern'),
+                    tags=json.dumps(insight_data.get('tags', []))
                 )
                 db.session.add(insight)
 

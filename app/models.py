@@ -51,4 +51,7 @@ class Insight(db.Model):
     survey_id = db.Column(db.Integer, db.ForeignKey('survey.id'), nullable=False)
     text = db.Column(db.Text, nullable=False)
     confidence = db.Column(db.Float, default=0.5)
+    insight_type = db.Column(db.String(50), default='pattern')
+    tags = db.Column(db.Text)  # JSON string of tags
+    supporting_evidence = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
