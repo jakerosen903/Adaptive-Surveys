@@ -25,6 +25,7 @@ class Survey(db.Model):
 class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.Text, nullable=False)
+    question_type = db.Column(db.String(50), default='open_ended')
     order = db.Column(db.Integer, default=1)
     survey_id = db.Column(db.Integer, db.ForeignKey('survey.id'), nullable=False)
     answers = db.relationship('Answer', backref='question', lazy='dynamic')
