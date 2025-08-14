@@ -23,6 +23,17 @@ def generate_next_question(survey_id, response_id):
         for answer in previous_answers
     ]
 
+    # Get useful insights from this survey to inform question generation
+    useful_insights = survey.insights.filter_by(useful=True).all()
+    useful_insights_text = [
+        {
+            "insight": insight.text,
+            "type": insight.insight_type,
+            "evidence": insight.supporting_evidence
+        }
+        for insight in useful_insights
+    ]
+
     # If there are no previous questions, generate the first question
     if not previous_questions:
         return generate_first_question(survey)
@@ -30,6 +41,27 @@ def generate_next_question(survey_id, response_id):
     # Use Claude API to generate the next question
     try:
         client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+        # Build context for learning-focused question generation
+        context = f"""You are an adaptive survey assistant. Your primary goal is to help answer this overarching question:
+        
+        MAIN QUESTION: "{survey.main_question}"
+        
+        Based on what you've learned so far, generate the next most valuable question to get closer to answering the main question."""
+        
+        if useful_insights_text:
+            context += f"""
+            
+        WHAT YOU'VE LEARNED FROM OTHER RESPONSES:
+        {json.dumps(useful_insights_text)}"""
+        
+        context += f"""
+        
+        THIS RESPONDENT'S PREVIOUS ANSWERS:
+        {json.dumps(previous_qa_pairs)}
+        
+        Generate a natural follow-up question that uses this learning context to get the most valuable information toward answering the main question.
+        Return ONLY the question text."""
+
         response = client.messages.create(
             model=CLAUDE_MODEL,
             max_tokens=DEFAULT_QUESTION_MAX_TOKENS,
@@ -37,15 +69,7 @@ def generate_next_question(survey_id, response_id):
             messages=[
                 {
                     "role": "user", 
-                    "content": f"""You are an adaptive survey assistant. You generate insightful follow-up questions based on 
-                    the main survey question and previous responses. The main question is: 
-                    "{survey.main_question}"
-
-                    Generate a natural, conversational follow-up question that delves deeper based on previous answers.
-                    The question should help gather more specific insights related to the main survey question.
-                    Return ONLY the question text without any explanation or additional content.
-                    
-                    Previous Q&A: {json.dumps(previous_qa_pairs)}"""
+                    "content": context
                 }
             ]
         )

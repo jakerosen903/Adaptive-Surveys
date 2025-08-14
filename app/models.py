@@ -55,3 +55,8 @@ class Insight(db.Model):
     tags = db.Column(db.Text)  # JSON string of tags
     supporting_evidence = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # New fields for tracking usefulness and response context
+    useful = db.Column(db.Boolean, default=None)  # None = not rated, True = useful, False = not useful
+    marked_useful_at = db.Column(db.DateTime)
+    generated_from_responses_count = db.Column(db.Integer, default=0)  # How many responses existed when this was generated

@@ -85,6 +85,7 @@ def generate_insights(survey_id):
             insights_data = json.loads(insights_text)
 
             # Save insights to database
+            current_response_count = len(responses)
             for insight_data in insights_data:
                 insight = Insight(
                     survey_id=survey_id,
@@ -92,7 +93,8 @@ def generate_insights(survey_id):
                     supporting_evidence=insight_data.get('supporting_evidence', ''),
                     confidence=float(insight_data.get('confidence_level', 50)) / 100.0,
                     insight_type=insight_data.get('insight_type', 'pattern'),
-                    tags=json.dumps(insight_data.get('tags', []))
+                    tags=json.dumps(insight_data.get('tags', [])),
+                    generated_from_responses_count=current_response_count
                 )
                 db.session.add(insight)
 
@@ -103,10 +105,12 @@ def generate_insights(survey_id):
             print(f"Error parsing insights JSON: {insights_text}")
 
             # Save as single insight if JSON parsing fails
+            current_response_count = len(responses)
             insight = Insight(
                 survey_id=survey_id,
                 text=insights_text,
-                confidence=0.5
+                confidence=0.5,
+                generated_from_responses_count=current_response_count
             )
             db.session.add(insight)
             db.session.commit()

@@ -77,10 +77,28 @@
                         </div>
                         {% endif %}
                         
-                        <small class="text-white-50">
-                            <i class="fas fa-clock me-1"></i>
-                            Generated {{ insight.created_at.strftime('%B %d, %Y at %I:%M %p') }}
-                        </small>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <small class="text-white-50">
+                                <i class="fas fa-clock me-1"></i>
+                                Generated {{ insight.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                            </small>
+                            
+                            <div class="insight-rating-buttons">
+                                <span class="text-white-50 small me-2">Is this helpful?</span>
+                                <button class="btn btn-sm btn-outline-success rating-btn 
+                                       {% if insight.useful == True %}active{% endif %}" 
+                                       data-insight-id="{{ insight.id }}" 
+                                       data-rating="true">
+                                    <i class="fas fa-thumbs-up"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger rating-btn ms-1 
+                                       {% if insight.useful == False %}active{% endif %}" 
+                                       data-insight-id="{{ insight.id }}" 
+                                       data-rating="false">
+                                    <i class="fas fa-thumbs-down"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 {% endfor %}
             </div>
@@ -123,5 +141,60 @@ function copyToClipboard() {
         console.error('Could not copy text: ', err);
     });
 }
+
+// Handle insight rating
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.rating-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const insightId = this.dataset.insightId;
+            const rating = this.dataset.rating === 'true';
+            const otherButton = document.querySelector(
+                `.rating-btn[data-insight-id="${insightId}"][data-rating="${!rating}"]`
+            );
+            
+            // Show loading state
+            this.disabled = true;
+            
+            // Send rating to server
+            fetch('/api/rate_insight', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    insight_id: insightId,
+                    useful: rating
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update button states
+                    this.classList.add('active');
+                    otherButton.classList.remove('active');
+                    
+                    // Show brief success feedback
+                    const originalText = this.innerHTML;
+                    this.innerHTML = rating ? 
+                        '<i class="fas fa-check"></i>' : 
+                        '<i class="fas fa-check"></i>';
+                    
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                    }, 1000);
+                } else {
+                    alert('Error rating insight. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error rating insight. Please try again.');
+            })
+            .finally(() => {
+                this.disabled = false;
+            });
+        });
+    });
+});
 </script>
 {% endblock %}

@@ -6,6 +6,7 @@ from app.services.response_processor import process_response
 from app.constants import MAX_QUESTIONS_PER_SURVEY
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
+from datetime import datetime
 import uuid
 
 main_bp = Blueprint('main', __name__)
@@ -156,15 +157,32 @@ def view_insights(survey_id):
         flash('Access denied')
         return redirect(url_for('main.dashboard'))
     
-    # Generate fresh insights
-    insights_data = generate_insights(survey_id)
+    # Get current response count
+    current_response_count = survey.responses.filter(SurveyResponse.completed_at.isnot(None)).count()
     
-    # Debug: Print what was generated
-    print(f"Generated insights data: {insights_data}")
-    
-    # Get insights from database
+    # Get existing insights
     insights = survey.insights.all()
-    print(f"Insights from database: {[i.text for i in insights]}")
+    
+    # Check if we need to generate new insights
+    needs_new_insights = False
+    if not insights:
+        needs_new_insights = True
+        print("No existing insights found")
+    else:
+        # Check if we have new responses since last insight generation
+        latest_insight = max(insights, key=lambda i: i.created_at)
+        if current_response_count > latest_insight.generated_from_responses_count:
+            needs_new_insights = True
+            print(f"New responses detected: {current_response_count} vs {latest_insight.generated_from_responses_count}")
+    
+    if needs_new_insights:
+        print("Generating new insights...")
+        insights_data = generate_insights(survey_id)
+        print(f"Generated insights data: {insights_data}")
+        # Refresh insights from database
+        insights = survey.insights.all()
+    else:
+        print(f"Using existing insights: {len(insights)} total")
     
     return render_template('insights.html', survey=survey, insights=insights)
 
@@ -186,6 +204,27 @@ def get_survey_link(survey_id):
         'title': survey.title,
         'main_question': survey.main_question
     })
+
+@api_bp.route('/rate_insight', methods=['POST'])
+def rate_insight():
+    data = request.get_json()
+    insight_id = data.get('insight_id')
+    useful = data.get('useful')  # True for useful, False for not useful
+    
+    insight = Insight.query.get_or_404(insight_id)
+    
+    # Check if user owns the survey this insight belongs to
+    if not current_user.is_authenticated or insight.survey.user_id != current_user.id:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    # Update the insight
+    insight.useful = useful
+    if useful:
+        insight.marked_useful_at = datetime.utcnow()
+    
+    db.session.commit()
+    
+    return jsonify({'success': True, 'useful': useful})
 
 @api_bp.route('/submit_answer', methods=['POST'])
 def submit_answer():
